@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema Financeiro - Cartões e Despesas</title>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.7.0/css/colReorder.dataTables.min.css">
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f4f6f9; margin: 0; padding: 0; color: #333; }
+    .tabs-header { display: flex; background: #1a365d; padding: 10px 25px 0 25px; gap: 5px; }
+    .tab-button { background-color: #2c5282; color: #e2e8f0; border: none; padding: 12px 24px; font-size: 14px; font-weight: 600; border-top-left-radius: 8px; border-top-right-radius: 8px; cursor: pointer; transition: all 0.2s ease; }
+    .tab-button:hover { background-color: #3182ce; color: white; }
+    .tab-button.active { background-color: #ffffff; color: #1a365d; }
+    .top-fixed-panel { position: sticky; top: 0; z-index: 1000; background: #ffffff; padding: 15px 25px 15px 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-bottom: 2px solid #e2e8f0; }
+    .container { max-width: 100%; margin: 0 auto; padding: 20px 25px 25px 25px; }
+    h1 { margin-top: 0; margin-bottom: 12px; color: #1a365d; font-size: 22px; }
+    .info-header { display: flex; gap: 30px; background: #edf2f7; padding: 8px 15px; border-radius: 6px; margin-bottom: 12px; font-weight: bold; color: #2d3748; flex-wrap: wrap; font-size: 13px; }
+    .cards-container { display: flex; gap: 15px; margin-bottom: 12px; flex-wrap: wrap; }
+    .card { flex: 1; min-width: 200px; padding: 10px 15px; border-radius: 8px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.08); }
+    .card-credito { background: linear-gradient(135deg, #2e7d32, #4caf50); }
+    .card-debito { background: linear-gradient(135deg, #c62828, #ef5350); }
+    .card-resumo { background: linear-gradient(135deg, #1565c0, #1e88e5); }
+    .card-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; opacity: 0.9; margin-bottom: 3px; }
+    .card-value { font-size: 20px; font-weight: bold; }
+    .card-sub { font-size: 11px; margin-top: 3px; opacity: 0.95; }
+    .action-section { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .action-btn { background-color: #2b6cb0; color: white; padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background-color 0.2s; }
+    .action-btn:hover { background-color: #2c5282; }
+    .export-btn { background-color: #28a745; color: white; padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background-color 0.2s; }
+    .export-btn:hover { background-color: #218838; }
+    .clear-btn { background-color: #e53e3e; color: white; padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background-color 0.2s; }
+    .clear-btn:hover { background-color: #c53030; }
+    .excel-btn { background-color: #107c41; color: white; padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background-color 0.2s; }
+    .excel-btn:hover { background-color: #0b592e; }
+    .buscar-btn { background-color: #6f42c1; color: white; padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background-color 0.2s; }
+    .buscar-btn:hover { background-color: #5a32a3; }
+    .buscar-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .backup-btn { background-color: #d69e2e; color: white; padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background-color 0.2s; }
+    .backup-btn:hover { background-color: #b7791f; }
+    .backup-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .estorno-btn { background-color: #e67e22; color: white; padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background-color 0.2s; }
+    .estorno-btn:hover { background-color: #d35400; }
+    .estorno-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .status-info { font-size: 12px; color: #718096; font-weight: 500; }
+    .color-filters { display: flex; gap: 20px; align-items: center; margin: 8px 0 12px 0; padding: 8px 15px; background: #f7fafc; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: wrap; }
+    .color-filter-item { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 12px; border-radius: 4px; transition: background-color 0.2s; border: 2px solid transparent; user-select: none; }
+    .color-filter-item:hover { background-color: #edf2f7; }
+    .color-filter-item.active-filter { border-color: #3182ce; background-color: #ebf8ff; }
+    .color-dot { width: 20px; height: 20px; border-radius: 50%; display: inline-block; border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0; }
+    .color-dot-yellow { background-color: #ffff00; }
+    .color-dot-blue { background-color: #a0c4ff; }
+    /* 🟠 Nova bolinha laranja */
+    .color-dot-orange { background-color: #ff9800; }
+    .color-filter-label { font-size: 13px; font-weight: 600; color: #2d3748; }
+    .color-filter-count { font-size: 12px; color: #718096; font-weight: 500; background: #edf2f7; padding: 0 8px; border-radius: 10px; }
+    .color-filter-clear { cursor: pointer; font-size: 12px; color: #e53e3e; font-weight: 600; margin-left: 5px; }
+    .color-filter-clear:hover { text-decoration: underline; }
+    .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_filter { margin-bottom: 10px; font-weight: 600; color: #4a5568; }
+    .table-container { width: 100%; overflow-x: auto; overflow-y: visible; position: relative; max-height: 600px; overflow-y: auto; }
+    table.dataTable { width: 100% !important; border-collapse: collapse !important; font-size: 13px; min-width: 900px; }
+    table.dataTable thead { position: sticky; top: 0; z-index: 50; }
+    table.dataTable thead tr.header-row th { background-color: #e2e8f0; color: #2d3748; padding: 8px 10px; border: 1px solid #cbd5e0; white-space: nowrap; position: sticky; top: 0; z-index: 55; }
+    table.dataTable thead tr.filter-row th { background-color: #edf2f7 !important; padding: 4px 6px !important; position: sticky; top: 38px; z-index: 54; }
+    table.dataTable thead th .resize-handle { position: absolute; top: 0; right: 0; width: 8px; height: 100%; cursor: col-resize; background: transparent; z-index: 60; touch-action: none; }
+    table.dataTable thead th .resize-handle:hover, table.dataTable thead th .resize-handle.active { background: #3182ce; opacity: 0.5; }
+    table.dataTable tbody td { border: 1px solid #cbd5e0; padding: 8px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    table.dataTable tbody tr:nth-child(even) { background-color: #f7fafc; }
+    td.highlight-cd { background-color: #ffff00 !important; font-weight: bold; color: #000000; }
+    td.highlight-val { background-color: #a2f0a2 !important; font-weight: bold; }
+    td.highlight-credito-unico { background-color: #a0c4ff !important; font-weight: bold; color: #000000; }
+    td.highlight-cartao-invalido { background-color: #ff9800 !important; color: #000000 !important; font-weight: bold; }
+    .gerar-header-box { background-color: #ffffff; padding: 15px; border-radius: 6px; border: 1px solid #cbd5e0; margin-bottom: 15px; }
+    .gerar-title-org { font-weight: bold; font-size: 13px; color: #1a365d; margin-bottom: 2px; }
+    .gerar-doc-title { font-weight: bold; font-size: 14px; color: #000000; margin-top: 8px; margin-bottom: 10px; }
+    .gerar-meta-table { border-collapse: collapse; margin-bottom: 10px; }
+    .gerar-meta-table th { background-color: #edf2f7; border: 1px solid #cbd5e0; padding: 4px 10px; font-size: 11px; text-align: center; }
+    .gerar-meta-table td { background-color: #ffffff; border: 1px solid #cbd5e0; padding: 6px 10px; font-size: 12px; font-weight: bold; text-align: center; }
+    #table-gerar thead th { background-color: #fff9db !important; color: #000000; font-weight: bold; }
+    .filter-input { width: 100%; padding: 4px 6px; box-sizing: border-box; font-size: 12px; border: 1px solid #cbd5e0; border-radius: 4px; outline: none; background: #ffffff; }
+    .filter-input:focus { border-color: #3182ce; box-shadow: 0 0 0 1px #3182ce; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .dataTables_scroll { overflow: visible !important; }
+    .dataTables_scrollHead, .dataTables_scrollBody { overflow: visible !important; }
+    .dataTables_scrollBody { overflow: visible !important; }
+    .table-container::-webkit-scrollbar { width: 8px; height: 10px; background: #f1f1f1; border-radius: 5px; }
+    .table-container::-webkit-scrollbar-thumb { background: #888; border-radius: 5px; }
+    .table-container::-webkit-scrollbar-thumb:hover { background: #555; }
+    .carregando { opacity: 0.6; pointer-events: none; }
+    .valor-negativo { color: red !important; font-weight: bold !important; }
+    .link-planilha { font-size: 12px; color: #2b6cb0; text-decoration: none; font-weight: 600; margin-left: 10px; }
+    .link-planilha:hover { text-decoration: underline; color: #1a365d; }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
+  <script src="https://cdn.datatables.net/colreorder/1.7.0/js/dataTables.colReorder.min.js"></script>
+</head>
+<body>
+
+  <div class="tabs-header">
+    <button class="tab-button active" onclick="alternarAba('aba-origem', this)">Despesa Cartão Pnae</button>
+    <button class="tab-button" onclick="alternarAba('aba-extraidos', this)">Dados Extraídos</button>
+    <button class="tab-button" onclick="alternarAba('aba-gerar', this)">Gerar dados</button>
+  </div>
+
+  <div class="top-fixed-panel" id="top-panel">
+    <h1 id="tab-title-display">
+      Despesa Cartão Pnae 2026
+      <a href="https://docs.google.com/spreadsheets/d/1Dx8rFwm9Pegy77Sq78rL6kK3-e7GIwfDQDh-rctCpbs/edit?gid=0#gid=0" target="_blank" class="link-planilha" id="link-planilha-gerar" style="display:none;">📊 Abrir Planilha</a>
+    </h1>
+    <div class="info-header">
+      <div>Agência: <span id="agencia-val">38326</span></div>
+      <div>Conta Corrente: <span id="conta-val">7167-6</span></div>
+    </div>
+    <div class="cards-container">
+      <div class="card card-credito">
+        <div class="card-title">Total de Crédito</div>
+        <div class="card-value" id="total-credito">R$ 0,00</div>
+        <div class="card-sub" id="qtd-credito">0 lançamentos</div>
+      </div>
+      <div class="card card-debito">
+        <div class="card-title">Total de Débito</div>
+        <div class="card-value" id="total-debito">R$ 0,00</div>
+        <div class="card-sub" id="qtd-debito">0 lançamentos</div>
+      </div>
+      <div class="card card-resumo">
+        <div class="card-title">Soma Geral (Coluna Valor)</div>
+        <div class="card-value" id="total-geral">R$ 0,00</div>
+        <div class="card-sub" id="qtd-total">0 registros no extrato</div>
+      </div>
+    </div>
+    <div class="action-section" id="actions-origem">
+      <input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;" onchange="processarArquivo(event)">
+      <button class="action-btn" onclick="document.getElementById('file-input').click()">Carregar Planilha (.xlsx)</button>
+      <button class="clear-btn" onclick="limparFiltrosOrigem()">Limpar Filtros</button>
+      <!-- 🟠 NOVO: filtro por cor laranja na aba Despesa Cartão PNAE -->
+      <div class="color-filters" id="color-filters-origem" style="margin: 0; padding: 4px 10px;">
+        <span style="font-weight: 600; font-size: 12px; color: #4a5568;">Cartões fora do prefixo:</span>
+        <div class="color-filter-item" id="filter-orange-origem" onclick="filtrarPorCorOrigem('orange')" title="Filtrar cartões com prefixo inválido">
+          <span class="color-dot color-dot-orange"></span>
+          <span class="color-filter-label">Laranja</span>
+          <span class="color-filter-count" id="count-orange-origem">0</span>
+          <span class="color-filter-clear" onclick="event.stopPropagation(); limparFiltroCorOrigem()">✕</span>
+        </div>
+      </div>
+      <div class="status-info" id="upload-status">Nenhum arquivo enviado.</div>
+    </div>
+    <div class="action-section" id="actions-extraidos" style="display: none;">
+      <button class="export-btn" onclick="exportarParaExtraidos()">Exportar Dados da Aba Despesa</button>
+      <button class="estorno-btn" id="btn-estorno-google" onclick="exportarEstornoParaGoogle()">🟡 Enviar Estornos (Amarelos)</button>
+      <button class="clear-btn" onclick="limparFiltrosExtraidos()">Limpar Filtros</button>
+      <div class="status-info" id="extraidos-status">Aguardando exportação.</div>
+    </div>
+    <div class="action-section" id="actions-gerar" style="display: none;">
+      <button class="export-btn" onclick="exportarExtraidoParaGerar()">Exportar do Extraído</button>
+      <button class="buscar-btn" id="btn-buscar-google" onclick="buscarDadosGoogle()">🔍 Buscar Dados Google</button>
+      <button class="backup-btn" id="btn-backup-google" onclick="exportarParaGoogleBackup()">💾 Backup Google</button>
+      <button class="clear-btn" onclick="limparFiltrosGerar()">Limpar Filtros</button>
+      <button class="excel-btn" onclick="exportarGerarParaXLSX()">Exportar (.xlsx)</button>
+      <div class="status-info" id="gerar-status">Aguardando geração.</div>
+    </div>
+    <div class="color-filters" id="color-filters-extraidos" style="display: none;">
+      <span style="font-weight: 600; font-size: 13px; color: #4a5568;">Filtros por destaque:</span>
+      <div class="color-filter-item" id="filter-yellow" onclick="filtrarPorCor('yellow')">
+        <span class="color-dot color-dot-yellow"></span>
+        <span class="color-filter-label">Amarelo</span>
+        <span class="color-filter-count" id="count-yellow">0</span>
+        <span class="color-filter-clear" onclick="event.stopPropagation(); limparFiltroCor('yellow')">✕</span>
+      </div>
+      <div class="color-filter-item" id="filter-blue" onclick="filtrarPorCor('blue')">
+        <span class="color-dot color-dot-blue"></span>
+        <span class="color-filter-label">Azul</span>
+        <span class="color-filter-count" id="count-blue">0</span>
+        <span class="color-filter-clear" onclick="event.stopPropagation(); limparFiltroCor('blue')">✕</span>
+      </div>
+      <button class="clear-btn" style="padding: 4px 12px; font-size: 11px;" onclick="limparTodosFiltrosCor()">Limpar todos</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div id="aba-origem" class="tab-content active">
+      <div class="table-container">
+        <table id="table-origem" class="display nowrap cell-border">
+          <thead>
+            <tr class="header-row">
+              <th>Data balancete</th>
+              <th>Agência Origem</th>
+              <th>Lote</th>
+              <th>Número Cartão</th>
+              <th>Código Histórico</th>
+              <th>Historico</th>
+              <th>Valor</th>
+              <th>Inf. C / D</th>
+              <th>Detalhamento Histórico</th>
+            </tr>
+            <tr class="filter-row">
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="aba-extraidos" class="tab-content">
+      <div class="table-container">
+        <table id="table-extraidos" class="display nowrap cell-border">
+          <thead>
+            <tr class="header-row">
+              <th>Data balancete</th>
+              <th>Numero Cartão</th>
+              <th>Historico</th>
+              <th>Valor</th>
+              <th>Inf. C / D</th>
+              <th>Mês</th>
+              <th>Estorno</th>
+              <th>NúnCaract</th>
+            </tr>
+            <tr class="filter-row">
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="aba-gerar" class="tab-content">
+      <div class="gerar-header-box">
+        <div class="gerar-title-org">Superintendência de Planejamento Operacional da Rede Escolar - SUPEC</div>
+        <div class="gerar-title-org">Diretoria de Recursos Informacionais da Rede Escolar - DRIRE</div>
+        <div class="gerar-title-org">Coordenação de Descentralização Financeira – CDF</div>
+        <div class="gerar-doc-title">DEMONSTRATIVO DE DESPESAS CARTÃO PNAE 2026</div>
+        <table class="gerar-meta-table">
+          <thead><tr><th>CNPJ</th><th>CODIGO DO CREDOR</th><th>AGENCIA</th><th>CONTA</th></tr></thead>
+          <tbody><tr><td>13.937.065/0001-00</td><td>2013.00010-8</td><td>3832-6</td><td>7167-6</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-container">
+        <table id="table-gerar" class="display nowrap cell-border">
+          <thead>
+            <tr class="header-row">
+              <th>Nº</th><th>NTE</th><th>MUNICIPIO</th><th>CODIGO DA SEC</th>
+              <th>CENTRO DE CUSTO</th><th>CODIGO DO INEP</th><th>NOME DA UNIDADE ESCOLAR</th>
+              <th>DIRETOR(A)</th><th>Nº DE CARTAO</th><th>VALOR DESPESA</th>
+              <th>DATA DA MOVIMENTAÇÃO</th><th>MÊS DA MOVIMENTAÇÃO</th><th>PROGRAMA</th>
+              <th>Inf C/D</th>
+            </tr>
+            <tr class="filter-row">
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+              <th><input type="text" class="filter-input" placeholder="Filtrar..." /></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbRL_n1gY6dTFI6RWHPZmxJjiNwFn7xlkofL0CGDRcsiqZ2WrJJuEc7N8WBHhGEh2bWA/exec";
+    const PLANILHA_ID = "1Dx8rFwm9Pegy77Sq78rL6kK3-e7GIwfDQDh-rctCpbs";
+    const NOME_ABA = "Base_Dados";
+    const NOME_BACKUP = "Backup_Dados";
+    const NOME_ESTORNO = "Dados_Estorno";
+    const PREFIXOS_PERMITIDOS = ["0009869","00674811"];
+
+    let dataTableOrigem = null, dataTableExtraidos = null, dataTableGerar = null;
+    let abaAtualId = 'aba-origem', filtroCorAtivo = null, dadosExtraidosOriginais = [];
+    let dadosGoogle = {};
+    // 🟠 NOVO: guarda os dados originais da tabela origem para permitir limpar o filtro laranja
+    let dadosOrigemOriginais = [];
+    let filtroLaranjaAtivo = false;
+
+    $(document).ready(function() {
+      dataTableOrigem = $('#table-origem').DataTable({
+        dom: 'ifrtp',
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json' },
+        paging: false,
+        orderCellsTop: true,
+        colReorder: true,
+        // 🟠 Pinta de laranja a célula "Número Cartão" quando o cartão NÃO tem prefixo permitido
+        createdRow: function(row, data, dataIndex) {
+          const numCartao = String(data[3] || '').trim();
+          const temPrefixoValido = PREFIXOS_PERMITIDOS.some(p => numCartao.startsWith(p));
+          if (numCartao && !temPrefixoValido) {
+            $('td', row).eq(3).addClass('highlight-cartao-invalido');
+          }
+        }
+      });
+
+      dataTableExtraidos = $('#table-extraidos').DataTable({
+        dom: 'ifrtp',
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json' },
+        paging: false,
+        orderCellsTop: true,
+        colReorder: true,
+        createdRow: function(row, data, dataIndex) {
+          const tipoDestaque = data[8];
+          if (tipoDestaque === 'par') {
+            $('td', row).eq(3).addClass('highlight-val');
+            $('td', row).eq(4).addClass('highlight-cd');
+          } else if (tipoDestaque === 'unico') {
+            $('td', row).eq(3).addClass('highlight-credito-unico');
+            $('td', row).eq(4).addClass('highlight-credito-unico');
+          }
+        }
+      });
+
+      dataTableGerar = $('#table-gerar').DataTable({
+        dom: 'ifrtp',
+        language: { url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/pt-BR.json' },
+        paging: false,
+        orderCellsTop: true,
+        colReorder: true,
+        columnDefs: [ { targets: 13, visible: false, searchable: false } ]
+      });
+
+      ativarRedimensionamento(dataTableOrigem, '#table-origem');
+      ativarRedimensionamento(dataTableExtraidos, '#table-extraidos');
+      ativarRedimensionamento(dataTableGerar, '#table-gerar');
+
+      dataTableOrigem.on('draw', function () {
+        if (abaAtualId === 'aba-origem') {
+          atualizarCardsPorFiltro(dataTableOrigem, 6, 7);
+          atualizarContagemLaranja();
+        }
+      });
+      dataTableExtraidos.on('draw', function () { if (abaAtualId === 'aba-extraidos') { atualizarCardsPorFiltro(dataTableExtraidos, 3, 4); atualizarContagensCores(); } });
+      dataTableGerar.on('draw', function () { if (abaAtualId === 'aba-gerar') atualizarCardsPorFiltro(dataTableGerar, 9, 13); });
+
+      $('#table-origem thead .filter-row input').on('keyup change clear', function () {
+        const colIndex = $(this).parent().index();
+        if (dataTableOrigem.column(colIndex).search() !== this.value) dataTableOrigem.column(colIndex).search(this.value).draw();
+      });
+      $('#table-extraidos thead .filter-row input').on('keyup change clear', function () {
+        const colIndex = $(this).parent().index();
+        if (dataTableExtraidos.column(colIndex).search() !== this.value) dataTableExtraidos.column(colIndex).search(this.value).draw();
+      });
+      $('#table-gerar thead .filter-row input').on('keyup change clear', function () {
+        const colIndex = $(this).parent().index();
+        if (dataTableGerar.column(colIndex).search() !== this.value) dataTableGerar.column(colIndex).search(this.value).draw();
+      });
+    });
+
+    function ativarRedimensionamento(dt, tableSelector) {
+      if (!dt) return;
+      const wrapper = $(tableSelector).closest('.dataTables_wrapper');
+      const table = wrapper.find('table');
+      const headerRowThs = table.find('thead tr.header-row th');
+      headerRowThs.each(function () {
+        const th = $(this);
+        th.find('.resize-handle').remove();
+        const handle = $('<div class="resize-handle"></div>');
+        th.append(handle);
+        handle.on('mousedown.colresize touchstart.colresize', function (evt) {
+          evt.preventDefault(); evt.stopPropagation();
+          const isTouch = evt.type === 'touchstart';
+          const startX = isTouch ? evt.originalEvent.touches[0].pageX : evt.pageX;
+          const colIndex = th.index();
+          const startWidth = th.outerWidth();
+          handle.addClass('active');
+          $('body').css('user-select', 'none');
+          function onMove(e2) {
+            const pageX = isTouch ? e2.originalEvent.touches[0].pageX : e2.originalEvent.touches[0].pageX;
+            const newWidth = Math.max(50, startWidth + (pageX - startX));
+            table.find('thead tr').each(function () {
+              $(this).find('th').eq(colIndex).css({ width: newWidth + 'px', minWidth: newWidth + 'px', maxWidth: newWidth + 'px' });
+            });
+            table.find('colgroup col').eq(colIndex).css('width', newWidth + 'px');
+            table.find('tbody tr').each(function () {
+              $(this).find('td').eq(colIndex).css({ width: newWidth + 'px', minWidth: newWidth + 'px', maxWidth: newWidth + 'px' });
+            });
+          }
+          function onUp() {
+            $(document).off('mousemove.colresize touchmove.colresize', onMove);
+            $(document).off('mouseup.colresize touchend.colresize', onUp);
+            handle.removeClass('active');
+            $('body').css('user-select', '');
+          }
+          $(document).on('mousemove.colresize touchmove.colresize', onMove);
+          $(document).on('mouseup.colresize touchend.colresize', onUp);
+        });
+      });
+    }
+
+    function alternarAba(abaId, btnElem) {
+      abaAtualId = abaId;
+      $('.tab-button').removeClass('active');
+      $(btnElem).addClass('active');
+      $('.tab-content').removeClass('active');
+      $('#' + abaId).addClass('active');
+      
+      const linkPlanilha = document.getElementById('link-planilha-gerar');
+      
+      if (abaId === 'aba-origem') {
+        document.getElementById('tab-title-display').innerText = "Despesa Cartão Pnae";
+        $('#actions-origem').show(); $('#actions-extraidos').hide(); $('#actions-gerar').hide();
+        $('#color-filters-extraidos').hide();
+        linkPlanilha.style.display = 'none';
+        dataTableOrigem.columns.adjust().draw();
+        atualizarContagemLaranja();
+      } else if (abaId === 'aba-extraidos') {
+        document.getElementById('tab-title-display').innerText = "Dados Extraídos";
+        $('#actions-origem').hide(); $('#actions-extraidos').show(); $('#actions-gerar').hide();
+        $('#color-filters-extraidos').show();
+        linkPlanilha.style.display = 'none';
+        dataTableExtraidos.columns.adjust().draw();
+        atualizarContagensCores();
+      } else {
+        document.getElementById('tab-title-display').innerHTML = 'Gerar dados <a href="https://docs.google.com/spreadsheets/d/1Dx8rFwm9Pegy77Sq78rL6kK3-e7GIwfDQDh-rctCpbs/edit?gid=0#gid=0" target="_blank" class="link-planilha">📊 Abrir Planilha</a>';
+        $('#actions-origem').hide(); $('#actions-extraidos').hide(); $('#actions-gerar').show();
+        $('#color-filters-extraidos').hide();
+        linkPlanilha.style.display = 'inline';
+        dataTableGerar.columns.adjust().draw();
+      }
+    }
+
+    // 🟠 Limpar filtros da aba origem (mantém o filtro laranja, se houver)
+    function limparFiltrosOrigem() {
+      $('#table-origem thead .filter-row input').val('');
+      dataTableOrigem.columns().search('').draw();
+    }
+
+    function limparFiltrosExtraidos() { $('#table-extraidos thead .filter-row input').val(''); dataTableExtraidos.columns().search('', true, false); limparTodosFiltrosCor(); if (dadosExtraidosOriginais && dadosExtraidosOriginais.length > 0) { dataTableExtraidos.clear(); dataTableExtraidos.rows.add(dadosExtraidosOriginais); dataTableExtraidos.draw(); atualizarContagensCores(); atualizarCardsPorFiltro(dataTableExtraidos, 3, 4); } }
+    function limparFiltrosGerar() { $('#table-gerar thead .filter-row input').val(''); dataTableGerar.columns().search('').draw(); }
+
+    // ===== 🟠 FUNÇÕES DO FILTRO LARANJA (aba Despesa Cartão Pnae) =====
+    function contarCartoesInvalidos() {
+      let count = 0;
+      dataTableOrigem.rows().data().each(function(cols) {
+        const numCartao = String(cols[3] || '').trim();
+        const temPrefixoValido = PREFIXOS_PERMITIDOS.some(p => numCartao.startsWith(p));
+        if (numCartao && !temPrefixoValido) count++;
+      });
+      return count;
+    }
+
+    function atualizarContagemLaranja() {
+      const count = contarCartoesInvalidos();
+      document.getElementById('count-orange-origem').textContent = count;
+    }
+
+    function filtrarPorCorOrigem(cor) {
+      if (cor !== 'orange') return;
+      // Se já está ativo, clicar de novo limpa
+      if (filtroLaranjaAtivo) { limparFiltroCorOrigem(); return; }
+
+      // Ativa o filtro visual
+      filtroLaranjaAtivo = true;
+      $('#filter-orange-origem').addClass('active-filter');
+
+      // Limpa buscas de coluna
+      $('#table-origem thead .filter-row input').val('');
+      dataTableOrigem.columns().search('');
+
+      // Filtra apenas os registros com cartão inválido
+      dataTableOrigem.clear();
+      const filtrados = [];
+      dadosOrigemOriginais.forEach(function(row) {
+        const numCartao = String(row[3] || '').trim();
+        const temPrefixoValido = PREFIXOS_PERMITIDOS.some(p => numCartao.startsWith(p));
+        if (numCartao && !temPrefixoValido) filtrados.push(row);
+      });
+      if (filtrados.length > 0) dataTableOrigem.rows.add(filtrados);
+      dataTableOrigem.draw();
+      atualizarContagemLaranja();
+      atualizarCardsPorFiltro(dataTableOrigem, 6, 7);
+    }
+
+    function limparFiltroCorOrigem() {
+      if (!filtroLaranjaAtivo) return;
+      filtroLaranjaAtivo = false;
+      $('#filter-orange-origem').removeClass('active-filter');
+      $('#table-origem thead .filter-row input').val('');
+      dataTableOrigem.columns().search('');
+      dataTableOrigem.clear();
+      if (dadosOrigemOriginais && dadosOrigemOriginais.length > 0) {
+        dataTableOrigem.rows.add(dadosOrigemOriginais);
+      }
+      dataTableOrigem.draw();
+      atualizarContagemLaranja();
+      atualizarCardsPorFiltro(dataTableOrigem, 6, 7);
+    }
+
+    function atualizarCardsPorFiltro(dtInstance, idxValor, idxInf) {
+      if (!dtInstance) return;
+      let totalCredito = 0, countCredito = 0, totalDebito = 0, countDebito = 0, somaGeralValores = 0, totalRegistros = 0;
+      const filteredData = dtInstance.rows({ search: 'applied' }).data();
+      filteredData.each(function (cols) {
+        totalRegistros++;
+        const valorBruto = String(cols[idxValor] || '').trim();
+        const infBruto = String(cols[idxInf] || '').trim().toUpperCase();
+        let valorNumerico = 0;
+        
+        if (typeof cols[idxValor] === 'number') {
+          valorNumerico = cols[idxValor];
+        } else {
+          valorNumerico = parseFloat(valorBruto.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.').replace(/[CDcd]/g, '')) || 0;
+        }
+        
+        somaGeralValores += valorNumerico;
+        const isDebito = infBruto.includes('D') || valorBruto.startsWith('-') || valorNumerico < 0;
+        const isCredito = infBruto.includes('C') || (!isDebito && valorNumerico > 0);
+        if (isDebito) { totalDebito += Math.abs(valorNumerico); countDebito++; }
+        else if (isCredito) { totalCredito += Math.abs(valorNumerico); countCredito++; }
+      });
+      const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('total-credito').innerText = fmt(totalCredito);
+      document.getElementById('qtd-credito').innerText = `${countCredito} lançamento(s)`;
+      document.getElementById('total-debito').innerText = fmt(totalDebito);
+      document.getElementById('qtd-debito').innerText = `${countDebito} lançamento(s)`;
+      document.getElementById('total-geral').innerText = fmt(somaGeralValores);
+      document.getElementById('qtd-total').innerText = `${totalRegistros} registro(s) no extrato`;
+    }
+
+    function atualizarContagensCores() {
+      const data = dataTableExtraidos.rows({ search: 'applied' }).data();
+      let countYellow = 0, countBlue = 0;
+      data.each(function(row) { const tipo = row[8]; if (tipo === 'par') countYellow++; else if (tipo === 'unico') countBlue++; });
+      document.getElementById('count-yellow').textContent = countYellow;
+      document.getElementById('count-blue').textContent = countBlue;
+    }
+
+    function filtrarPorCor(cor) {
+      if (filtroCorAtivo === cor) { limparTodosFiltrosCor(); return; }
+      $('#filter-yellow, #filter-blue').removeClass('active-filter');
+      filtroCorAtivo = cor;
+      $(`#filter-${cor}`).addClass('active-filter');
+      dataTableExtraidos.columns().search('', true, false);
+      $('#table-extraidos thead .filter-row input').val('');
+      const allData = dataTableExtraidos.rows().data();
+      const filteredData = [];
+      allData.each(function(row, index) { const tipo = row[8]; if (cor === 'yellow' && tipo === 'par') filteredData.push(row); else if (cor === 'blue' && tipo === 'unico') filteredData.push(row); });
+      dataTableExtraidos.clear();
+      if (filteredData.length > 0) dataTableExtraidos.rows.add(filteredData);
+      dataTableExtraidos.draw();
+      atualizarContagensCores();
+      atualizarCardsPorFiltro(dataTableExtraidos, 3, 4);
+    }
+
+    function limparFiltroCor(cor) { if (filtroCorAtivo === cor) limparTodosFiltrosCor(); }
+    function limparTodosFiltrosCor() {
+      filtroCorAtivo = null;
+      $('#filter-yellow, #filter-blue').removeClass('active-filter');
+      dataTableExtraidos.columns().search('', true, false);
+      $('#table-extraidos thead .filter-row input').val('');
+      if (dadosExtraidosOriginais && dadosExtraidosOriginais.length > 0) {
+        dataTableExtraidos.clear();
+        dataTableExtraidos.rows.add(dadosExtraidosOriginais);
+        dataTableExtraidos.draw();
+        atualizarContagensCores();
+        atualizarCardsPorFiltro(dataTableExtraidos, 3, 4);
+      }
+    }
+
+    function extrairMesExtenso(dataStr) {
+      if (!dataStr) return '';
+      const str = String(dataStr).trim();
+      let mesNum = null;
+      if (str.includes('/')) { const partes = str.split('/'); if (partes.length >= 2) mesNum = parseInt(partes[1], 10); }
+      else if (str.includes('-')) { const partes = str.split('-'); if (partes.length >= 2) mesNum = parseInt(partes[1], 10); }
+      const meses = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+      if (mesNum && mesNum >= 1 && mesNum <= 12) return meses[mesNum - 1];
+      return '';
+    }
+
+    function processarArquivo(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        const rows = rawData.slice(3);
+        dataTableOrigem.clear();
+        const dadosOrigem = [], dadosParaGoogleScript = [];
+        rows.forEach(row => {
+          const cols = row.slice(2, 11);
+          if (cols.some(val => val !== undefined && val !== null && val !== '')) {
+            dadosOrigem.push([cols[0]||'', cols[1]||'', cols[2]||'', cols[3]||'', cols[4]||'', cols[5]||'', cols[6]||'', cols[7]||'', cols[8]||'']);
+            dadosParaGoogleScript.push(cols);
+          }
+        });
+        // 🟠 NOVO: guarda os dados originais e reseta o filtro laranja
+        dadosOrigemOriginais = dadosOrigem.slice();
+        filtroLaranjaAtivo = false;
+        $('#filter-orange-origem').removeClass('active-filter');
+        dataTableOrigem.rows.add(dadosOrigem).draw();
+        const dataHoraEnvio = new Date().toLocaleString('pt-BR');
+        document.getElementById('upload-status').innerText = `Enviado em: ${dataHoraEnvio}`;
+        if (abaAtualId === 'aba-origem') { dataTableOrigem.columns.adjust(); atualizarCardsPorFiltro(dataTableOrigem, 6, 7); }
+        ativarRedimensionamento(dataTableOrigem, '#table-origem');
+        atualizarContagemLaranja();
+        enviarParaGoogleScript(dadosParaGoogleScript, dataHoraEnvio);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // ===== FUNÇÃO PARA EXPORTAR PARA DADOS EXTRAÍDOS =====
+    function exportarParaExtraidos() {
+      const origData = dataTableOrigem.rows().data();
+      if (origData.length === 0) { 
+        alert("Não existem dados na aba 'Despesa, Cartão, Manutenção' para exportar."); 
+        return; 
+      }
+      
+      dataTableExtraidos.clear();
+      const registrosBrutos = [];
+      
+      origData.each(function (cols) {
+        const dataBalancete = cols[0] || '';
+        let numCartaoBruto = String(cols[3] || '').trim();
+        const historico = cols[5] || '';
+        const valor = cols[6] || '';
+        const infCD = String(cols[7] || '').trim().toUpperCase();
+        
+        // ✅ Usa startsWith() para reconhecer prefixos de qualquer tamanho
+        const temPrefixoValido = PREFIXOS_PERMITIDOS.some(p => numCartaoBruto.startsWith(p));
+        
+        if (temPrefixoValido) {
+          if (numCartaoBruto.startsWith("00")) {
+            numCartaoBruto = numCartaoBruto.substring(2);
+          }
+          const cartaoFormatado = '4' + numCartaoBruto;
+          const mesExtenso = extrairMesExtenso(dataBalancete);
+          const nunCaract = cartaoFormatado.length;
+          
+          registrosBrutos.push({ 
+            dataBalancete, 
+            cartaoFormatado, 
+            historico, 
+            valor, 
+            infCD, 
+            mesExtenso, 
+            nunCaract, 
+            tipoDestaque: 'nenhum', 
+            estornoTexto: '' 
+          });
+        }
+      });
+
+      // Identificação de pares C/D
+      const creditosIndices = [];
+      registrosBrutos.forEach((item, idx) => { 
+        if (item.infCD === 'C') creditosIndices.push(idx); 
+      });
+      
+      creditosIndices.forEach(cIdx => {
+        const itemC = registrosBrutos[cIdx];
+        const dIdx = registrosBrutos.findIndex((itemD, idx) => 
+          idx !== cIdx && 
+          itemD.cartaoFormatado === itemC.cartaoFormatado && 
+          itemD.valor === itemC.valor && 
+          itemD.infCD === 'D' && 
+          itemD.tipoDestaque === 'nenhum'
+        );
+        if (dIdx !== -1) { 
+          registrosBrutos[cIdx].tipoDestaque = 'par'; 
+          registrosBrutos[cIdx].estornoTexto = 'Estorno'; 
+          registrosBrutos[dIdx].tipoDestaque = 'par'; 
+        }
+      });
+
+      registrosBrutos.forEach((item, idx) => { 
+        if (item.infCD === 'C' && item.tipoDestaque === 'nenhum') { 
+          item.tipoDestaque = 'unico'; 
+          item.estornoTexto = 'Estorno'; 
+        } 
+      });
+
+      const dadosExtraidos = registrosBrutos.map(item => [
+        item.dataBalancete, 
+        item.cartaoFormatado, 
+        item.historico, 
+        item.valor, 
+        item.infCD, 
+        item.mesExtenso, 
+        item.estornoTexto, 
+        item.nunCaract, 
+        item.tipoDestaque
+      ]);
+      
+      dadosExtraidosOriginais = dadosExtraidos.slice();
+      dataTableExtraidos.rows.add(dadosExtraidos).draw();
+      document.getElementById('extraidos-status').innerText = `${dadosExtraidos.length} registro(s) exportado(s).`;
+      dataTableExtraidos.columns.adjust();
+      atualizarCardsPorFiltro(dataTableExtraidos, 3, 4);
+      ativarRedimensionamento(dataTableExtraidos, '#table-extraidos');
+      if (abaAtualId === 'aba-extraidos') { 
+        atualizarContagensCores(); 
+        $('#color-filters-extraidos').show(); 
+      }
+    }
+
+    // ===== FUNÇÃO PARA EXPORTAR ESTORNOS (AMARELOS) PARA O GOOGLE SHEETS =====
+    function exportarEstornoParaGoogle() {
+      const btn = document.getElementById('btn-estorno-google');
+      btn.disabled = true;
+      btn.textContent = '⏳ Enviando...';
+      document.getElementById('extraidos-status').innerText = 'Exportando estornos para o Google Sheets (aba Dados_Estorno)...';
+
+      const dadosExtraidos = dataTableExtraidos.rows().data();
+      if (dadosExtraidos.length === 0) {
+        alert("Não há dados na aba 'Dados Extraídos' para exportar.");
+        btn.disabled = false;
+        btn.textContent = '🟡 Enviar Estornos (Amarelos)';
+        document.getElementById('extraidos-status').innerText = '⚠️ Nenhum dado para exportar.';
+        return;
+      }
+
+      const dadosAmarelos = [];
+      dadosExtraidos.each(function(row) {
+        const tipoDestaque = row[8];
+        if (tipoDestaque === 'par') {
+          dadosAmarelos.push([
+            row[0] || '', row[1] || '', row[2] || '', row[3] || '', row[4] || '', row[5] || '', row[6] || '', row[7] || ''
+          ]);
+        }
+      });
+
+      if (dadosAmarelos.length === 0) {
+        alert("Não há registros amarelos (estornos) para exportar.");
+        btn.disabled = false;
+        btn.textContent = '🟡 Enviar Estornos (Amarelos)';
+        document.getElementById('extraidos-status').innerText = '⚠️ Nenhum estorno encontrado.';
+        return;
+      }
+
+      const payload = {
+        acao: 'estorno',
+        planilhaId: PLANILHA_ID,
+        aba: NOME_ESTORNO,
+        dados: dadosAmarelos,
+        linhaInicio: 3,
+        timestamp: new Date().toISOString()
+      };
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        document.getElementById('extraidos-status').innerText = `✅ ${dadosAmarelos.length} estornos enviados para Dados_Estorno com sucesso!`;
+        btn.textContent = '✅ Estornos Enviados';
+        btn.disabled = false;
+        setTimeout(() => {
+          btn.textContent = '🟡 Enviar Estornos (Amarelos)';
+        }, 3000);
+      })
+      .catch(err => {
+        console.error('Erro ao enviar estornos:', err);
+        document.getElementById('extraidos-status').innerText = '❌ Erro ao enviar estornos: ' + err.message;
+        btn.textContent = '🟡 Enviar Estornos (Amarelos)';
+        btn.disabled = false;
+      });
+    }
+
+    // ===== FUNÇÃO PARA BUSCAR DADOS DO GOOGLE SHEETS =====
+    function buscarDadosGoogle() {
+      const btn = document.getElementById('btn-buscar-google');
+      btn.disabled = true;
+      btn.textContent = '⏳ Carregando...';
+      document.getElementById('gerar-status').innerText = 'Buscando dados do Google Sheets (aba Base_Dados)...';
+
+      const url = `https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(NOME_ABA)}`;
+
+      fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Erro HTTP: ${response.status}`);
+          }
+          return response.text();
+        })
+        .then(csvText => {
+          processarCSVGoogle(csvText);
+          btn.textContent = '✅ Dados Carregados';
+          btn.disabled = false;
+        })
+        .catch(err => {
+          console.error('Erro ao buscar dados via CSV:', err);
+          document.getElementById('gerar-status').innerText = 'Tentando método alternativo...';
+          tentarBuscarViaJSONP(btn);
+        });
+    }
+
+    function processarCSVGoogle(csvText) {
+      const linhas = csvText.split('\n').filter(linha => linha.trim() !== '');
+      if (linhas.length < 2) {
+        throw new Error('Nenhum dado encontrado na planilha.');
+      }
+
+      dadosGoogle = {};
+      let count = 0;
+
+      for (let i = 1; i < linhas.length; i++) {
+        const linha = linhas[i];
+        const valores = [];
+        let campoAtual = '';
+        let dentroAspas = false;
+
+        for (let char of linha) {
+          if (char === '"') {
+            dentroAspas = !dentroAspas;
+          } else if (char === ',' && !dentroAspas) {
+            valores.push(campoAtual.trim());
+            campoAtual = '';
+          } else {
+            campoAtual += char;
+          }
+        }
+        valores.push(campoAtual.trim());
+
+        const colunas = valores.map(v => v.replace(/^"|"$/g, '').trim());
+        
+        const cartao = colunas[4] || '';
+        if (cartao) {
+          dadosGoogle[cartao] = {
+            nte: colunas[5] || '',
+            municipio: colunas[6] || '',
+            codSec: colunas[7] || '',
+            centroCusto: colunas[8] || '',
+            codInep: colunas[9] || '',
+            nomeEscola: colunas[10] || '',
+            diretor: colunas[11] || ''
+          };
+          count++;
+        }
+      }
+
+      document.getElementById('gerar-status').innerText = `${count} registros carregados do Google (aba: ${NOME_ABA}).`;
+      preencherDadosGoogle();
+    }
+
+    function tentarBuscarViaJSONP(btn) {
+      document.getElementById('gerar-status').innerText = 'Tentando método alternativo JSONP...';
+
+      const scriptAntigo = document.getElementById('google-sheets-jsonp');
+      if (scriptAntigo) scriptAntigo.remove();
+
+      let respondeu = false;
+      const timeoutId = setTimeout(function () {
+        if (!respondeu) {
+          respondeu = true;
+          document.getElementById('gerar-status').innerText = '❌ Tempo esgotado. Verifique o compartilhamento da planilha.';
+          btn.textContent = '🔍 Buscar Dados Google';
+          btn.disabled = false;
+        }
+      }, 20000);
+
+      window.googleSheetsCallback = function (response) {
+        if (respondeu) return;
+        respondeu = true;
+        clearTimeout(timeoutId);
+
+        try {
+          if (response.status === 'error') {
+            const msg = (response.errors && response.errors[0] && response.errors[0].detailed_message) || 'Erro desconhecido.';
+            throw new Error(msg);
+          }
+          processarRespostaGoogle(response);
+          btn.textContent = '✅ Dados Carregados';
+          btn.disabled = false;
+        } catch (err) {
+          console.error('Erro ao processar resposta JSONP:', err);
+          document.getElementById('gerar-status').innerText = '❌ Erro: ' + err.message;
+          btn.textContent = '🔍 Buscar Dados Google';
+          btn.disabled = false;
+        }
+      };
+
+      const url = `https://docs.google.com/spreadsheets/d/${PLANILHA_ID}/gviz/tq?sheet=${encodeURIComponent(NOME_ABA)}&tqx=out:json;responseHandler:googleSheetsCallback`;
+
+      const script = document.createElement('script');
+      script.id = 'google-sheets-jsonp';
+      script.src = url;
+      script.onerror = function () {
+        if (respondeu) return;
+        respondeu = true;
+        clearTimeout(timeoutId);
+        document.getElementById('gerar-status').innerText = '❌ Erro: Não foi possível carregar a planilha.';
+        btn.textContent = '🔍 Buscar Dados Google';
+        btn.disabled = false;
+      };
+      document.body.appendChild(script);
+    }
+
+    function processarRespostaGoogle(response) {
+      const btn = document.getElementById('btn-buscar-google');
+      const linhas = (response.table && response.table.rows) ? response.table.rows : [];
+
+      dadosGoogle = {};
+      let count = 0;
+      
+      linhas.forEach(function (row) {
+        const cols = row.c || [];
+        const cartao = celValorGoogle(cols[4]);
+        if (cartao) {
+          dadosGoogle[cartao] = {
+            nte: celValorGoogle(cols[5]),
+            municipio: celValorGoogle(cols[6]),
+            codSec: celValorGoogle(cols[7]),
+            centroCusto: celValorGoogle(cols[8]),
+            codInep: celValorGoogle(cols[9]),
+            nomeEscola: celValorGoogle(cols[10]),
+            diretor: celValorGoogle(cols[11])
+          };
+          count++;
+        }
+      });
+
+      document.getElementById('gerar-status').innerText = `${count} registros carregados do Google (aba: ${NOME_ABA}).`;
+      btn.textContent = '✅ Dados Carregados';
+      btn.disabled = false;
+
+      preencherDadosGoogle();
+    }
+
+    function celValorGoogle(cell) {
+      if (!cell) return '';
+      if (cell.f !== undefined && cell.f !== null && cell.f !== '') return String(cell.f).trim();
+      if (cell.v !== undefined && cell.v !== null) return String(cell.v).trim();
+      return '';
+    }
+
+    function preencherDadosGoogle() {
+      const dadosGerar = dataTableGerar.rows().data();
+      if (dadosGerar.length === 0) {
+        document.getElementById('gerar-status').innerText = '⚠️ Nenhum dado na tabela "Gerar dados". Exporte primeiro do Extraído.';
+        return;
+      }
+      if (Object.keys(dadosGoogle).length === 0) {
+        document.getElementById('gerar-status').innerText = '⚠️ Nenhum dado do Google carregado. Clique em "Buscar Dados Google" primeiro.';
+        return;
+      }
+
+      let atualizados = 0;
+      let naoEncontrados = 0;
+      let azuisMantidos = 0;
+
+      const updates = [];
+
+      dadosGerar.each(function(row, index) {
+        const numCartao = row[8] ? row[8].toString().trim() : '';
+        const tipo = row[14] || '';
+
+        if (numCartao && dadosGoogle[numCartao]) {
+          const dados = dadosGoogle[numCartao];
+          
+          updates.push({
+            index: index,
+            nte: dados.nte || '',
+            municipio: dados.municipio || '',
+            codSec: dados.codSec || '',
+            centroCusto: dados.centroCusto || '',
+            codInep: dados.codInep || '',
+            diretor: dados.diretor || '',
+            nomeEscola: tipo === 'unico' ? (dados.nomeEscola || '') + ' (não identificamos o debito)' : (dados.nomeEscola || '')
+          });
+          
+          if (tipo === 'unico') {
+            azuisMantidos++;
+          }
+          atualizados++;
+        } else if (numCartao) {
+          updates.push({
+            index: index,
+            nomeEscola: tipo === 'unico' ? 'NÃO IDENTIFICADO (não identificamos o debito)' : 'NÃO IDENTIFICADO'
+          });
+          naoEncontrados++;
+        }
+      });
+
+      updates.forEach(update => {
+        if (update.nte !== undefined) {
+          dataTableGerar.cell(update.index, 1).data(update.nte);
+          dataTableGerar.cell(update.index, 2).data(update.municipio);
+          dataTableGerar.cell(update.index, 3).data(update.codSec);
+          dataTableGerar.cell(update.index, 4).data(update.centroCusto);
+          dataTableGerar.cell(update.index, 5).data(update.codInep);
+          dataTableGerar.cell(update.index, 7).data(update.diretor);
+          dataTableGerar.cell(update.index, 6).data(update.nomeEscola);
+        } else if (update.nomeEscola) {
+          dataTableGerar.cell(update.index, 6).data(update.nomeEscola);
+        }
+      });
+
+      dataTableGerar.draw();
+      
+      dataTableGerar.rows().every(function() {
+        const rowData = this.data();
+        const valor = rowData[9];
+        const tipo = rowData[14];
+        if (tipo === 'unico' && typeof valor === 'number' && valor < 0) {
+          const cell = this.node().querySelector('td:nth-child(10)');
+          if (cell) {
+            cell.style.color = 'red';
+            cell.style.fontWeight = 'bold';
+            cell.textContent = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          }
+        }
+      });
+
+      const msg = `✅ ${atualizados} registros atualizados com dados do Google. ${naoEncontrados} cartões não encontrados. ${azuisMantidos} registros azuis processados.`;
+      document.getElementById('gerar-status').innerText = msg;
+
+      atualizarCardsPorFiltro(dataTableGerar, 9, 13);
+    }
+
+    function exportarExtraidoParaGerar() {
+      const extraidosData = dataTableExtraidos.rows().data();
+      if (extraidosData.length === 0) {
+        alert("Não existem dados na aba 'Dados Extraídos' para exportar.");
+        return;
+      }
+      dataTableGerar.clear();
+      const novosDadosGerar = [];
+      let registrosIgnorados = 0;
+      let registrosAzuis = 0;
+      
+      const todosRegistros = [];
+      extraidosData.each(function (cols, index) {
+        const tipoDestaque = cols[8];
+        if (tipoDestaque === 'par') {
+          registrosIgnorados++;
+          return;
+        }
+        
+        const numCartao = cols[1] || '';
+        let valor = cols[3] || '';
+        const infCD = cols[4] || '';
+        const dataMov = cols[0] || '';
+        const mesMov = cols[5] || '';
+        const programa = 'Alimentação';
+        
+        let valorFormatado = valor;
+        let nomeEscola = '';
+        let tipoParaArmazenar = tipoDestaque;
+        
+        if (tipoDestaque === 'unico') {
+          registrosAzuis++;
+          let valorNumerico = 0;
+          if (typeof valor === 'number') {
+            valorNumerico = valor;
+          } else {
+            valorNumerico = parseFloat(String(valor).replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+          }
+          valorFormatado = -Math.abs(valorNumerico);
+          nomeEscola = ' (não identificamos o debito)';
+        }
+        
+        todosRegistros.push({
+          numCartao: numCartao,
+          valor: valorFormatado,
+          infCD: infCD,
+          dataMov: dataMov,
+          mesMov: mesMov,
+          programa: programa,
+          tipo: tipoParaArmazenar,
+          nomeEscola: nomeEscola
+        });
+      });
+      
+      todosRegistros.forEach(function(reg) {
+        novosDadosGerar.push([
+          novosDadosGerar.length + 1,
+          '', '', '', '', '',
+          reg.nomeEscola,
+          '',
+          reg.numCartao,
+          reg.valor,
+          reg.dataMov,
+          reg.mesMov,
+          reg.programa,
+          reg.infCD,
+          reg.tipo
+        ]);
+      });
+      
+      dataTableGerar.rows.add(novosDadosGerar).draw();
+      
+      dataTableGerar.rows().every(function() {
+        const rowData = this.data();
+        const valor = rowData[9];
+        const tipo = rowData[14];
+        if (tipo === 'unico' && typeof valor === 'number' && valor < 0) {
+          const cell = this.node().querySelector('td:nth-child(10)');
+          if (cell) {
+            cell.style.color = 'red';
+            cell.style.fontWeight = 'bold';
+            cell.textContent = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+          }
+        }
+      });
+      
+      const msg = `${novosDadosGerar.length} registro(s) gerados. ${registrosIgnorados} amarelo(s) ignorados. ${registrosAzuis} azul(is) convertidos com valor negativo.`;
+      document.getElementById('gerar-status').innerText = msg;
+      dataTableGerar.columns.adjust();
+      atualizarCardsPorFiltro(dataTableGerar, 9, 13);
+      ativarRedimensionamento(dataTableGerar, '#table-gerar');
+
+      if (Object.keys(dadosGoogle).length > 0) {
+        preencherDadosGoogle();
+      }
+    }
+
+    function exportarParaGoogleBackup() {
+      const btn = document.getElementById('btn-backup-google');
+      btn.disabled = true;
+      btn.textContent = '⏳ Enviando...';
+      document.getElementById('gerar-status').innerText = 'Exportando dados para o Google Sheets (aba Backup_Dados)...';
+
+      const dadosGerar = dataTableGerar.rows().data();
+      if (dadosGerar.length === 0) {
+        alert("Não há dados na tabela 'Gerar dados' para exportar.");
+        btn.disabled = false;
+        btn.textContent = '💾 Backup Google';
+        document.getElementById('gerar-status').innerText = '⚠️ Nenhum dado para exportar.';
+        return;
+      }
+
+      const dadosParaEnviar = [];
+      dadosGerar.each(function(row) {
+        dadosParaEnviar.push([
+          row[0] || '', row[1] || '', row[2] || '', row[3] || '', row[4] || '', row[5] || '', row[6] || '', row[7] || '', row[8] || '', row[9] || '', row[10] || '', row[11] || '', row[12] || ''
+        ]);
+      });
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          acao: 'backup',
+          planilhaId: PLANILHA_ID,
+          aba: NOME_BACKUP,
+          dados: dadosParaEnviar,
+          linhaInicio: 8,
+          timestamp: new Date().toISOString()
+        })
+      })
+      .then(() => {
+        document.getElementById('gerar-status').innerText = `✅ ${dadosParaEnviar.length} registros enviados para Backup_Dados com sucesso!`;
+        btn.textContent = '✅ Backup Enviado';
+        btn.disabled = false;
+        setTimeout(() => {
+          btn.textContent = '💾 Backup Google';
+        }, 3000);
+      })
+      .catch(err => {
+        console.error('Erro ao enviar backup:', err);
+        document.getElementById('gerar-status').innerText = '❌ Erro ao enviar backup: ' + err.message;
+        btn.textContent = '💾 Backup Google';
+        btn.disabled = false;
+      });
+    }
+
+    function exportarGerarParaXLSX() {
+      const data = dataTableGerar.rows({ search: 'applied' }).data();
+      if (data.length === 0) { alert("Não há dados na tabela para exportar."); return; }
+      const mesMovimentacao = data[0] && data[0][11] ? String(data[0][11]).trim() : "Geral";
+      const hoje = new Date();
+      const diaStr = String(hoje.getDate()).padStart(2, '0');
+      const mesStr = String(hoje.getMonth() + 1).padStart(2, '0');
+      const anoStr = hoje.getFullYear();
+      const dataFormatadaHoje = `${diaStr}-${mesStr}-${anoStr}`;
+      const nomeAba = `Despesas Faed ${mesMovimentacao}`.substring(0, 31);
+      const nomeArquivo = `Despesas Faed ${mesMovimentacao} ${dataFormatadaHoje}.xlsx`;
+      const rawRows = [
+        ["Superintendência de Planejamento Operacional da Rede Escolar - SUPEC"],
+        ["Diretoria de Recursos Informacionais da Rede Escolar - DRIRE"],
+        ["Coordenação de Descentralização Financeira – CDF"],
+        ["DEMONSTRATIVO DE DESPESAS CARTÃO PNAE 2026"],
+        [],
+        ["CNPJ", "CODIGO DO CREDOR", "AGENCIA", "CONTA"],
+        ["13.937.065/0001-00", "2013.00010-8", "3832-6", "7167-6"],
+        [],
+        ["Nº","NTE","MUNICIPIO","CODIGO DA SEC","CENTRO DE CUSTO","CODIGO DO INEP","NOME DA UNIDADE ESCOLAR","DIRETOR(A)","Nº DE CARTAO","VALOR DESPESA","DATA DA MOVIMENTAÇÃO","MÊS DA MOVIMENTAÇÃO","PROGRAMA"]
+      ];
+      data.each(function (row) {
+        const valor = row[9];
+        let valorNumerico = 0;
+        if (typeof valor === 'number') {
+          valorNumerico = valor;
+        } else {
+          valorNumerico = parseFloat(String(valor).replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.').replace(/[CDcd]/g, '')) || 0;
+        }
+        rawRows.push([row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], valorNumerico, row[10], row[11], row[12]]);
+      });
+      const primeiraLinhaDados = 10, ultimaLinhaDados = 9 + data.length;
+      rawRows.push(["TOTAL GERAL","","","","","","","","",{ t: 'n', f: `SUM(J${primeiraLinhaDados}:J${ultimaLinhaDados})` },"","",""]);
+      const ws = XLSX.utils.aoa_to_sheet(rawRows);
+      const borderThin = { top: { style: "thin", color: { rgb: "000000" } }, bottom: { style: "thin", color: { rgb: "000000" } }, left: { style: "thin", color: { rgb: "000000" } }, right: { style: "thin", color: { rgb: "000000" } } };
+      const borderDouble = { top: { style: "thin", color: { rgb: "000000" } }, bottom: { style: "double", color: { rgb: "000000" } }, left: { style: "thin", color: { rgb: "000000" } }, right: { style: "thin", color: { rgb: "000000" } } };
+      const styleHeaderInst = { font: { bold: true, name: "Segoe UI" } };
+      const styleDocTitle = { font: { bold: true, size: 12, name: "Segoe UI" } };
+      const styleMetaHeader = { font: { bold: true, size: 9 }, fill: { fgColor: { rgb: "EDF2F7" } }, border: borderThin, alignment: { horizontal: "center", vertical: "center" } };
+      const styleMetaVal = { font: { bold: true, size: 10 }, border: borderThin, alignment: { horizontal: "center", vertical: "center" } };
+      const styleMainHeader = { font: { bold: true, size: 10, color: { rgb: "000000" } }, fill: { fgColor: { rgb: "FFF9DB" } }, border: borderThin, alignment: { horizontal: "center", vertical: "center", wrapText: true } };
+      const styleDataCell = { font: { size: 10 }, border: borderThin, alignment: { vertical: "center" } };
+      const styleDataValor = { font: { size: 10 }, border: borderThin, alignment: { horizontal: "right", vertical: "center" }, numFmt: '#,##0.00' };
+      const styleDataValorNegativo = { font: { bold: true, size: 10, color: { rgb: "FF0000" } }, border: borderThin, alignment: { horizontal: "right", vertical: "center" }, numFmt: '#,##0.00' };
+      const styleTotalCell = { font: { bold: true, size: 10 }, fill: { fgColor: { rgb: "EAEEF3" } }, border: borderDouble, alignment: { vertical: "center" } };
+      const styleTotalValor = { font: { bold: true, size: 10 }, fill: { fgColor: { rgb: "EAEEF3" } }, border: borderDouble, alignment: { horizontal: "right", vertical: "center" }, numFmt: '#,##0.00' };
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cell_address = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[cell_address]) continue;
+          if (R >= 0 && R <= 2) ws[cell_address].s = styleHeaderInst;
+          else if (R === 3) ws[cell_address].s = styleDocTitle;
+          else if (R === 5 && C <= 3) ws[cell_address].s = styleMetaHeader;
+          else if (R === 6 && C <= 3) ws[cell_address].s = styleMetaVal;
+          else if (R === 8) ws[cell_address].s = styleMainHeader;
+          else if (R >= 9 && R < range.e.r) { 
+            if (C === 9) {
+              const valor = ws[cell_address].v;
+              if (typeof valor === 'number' && valor < 0) {
+                ws[cell_address].s = styleDataValorNegativo;
+              } else {
+                ws[cell_address].s = styleDataValor;
+              }
+            } else {
+              ws[cell_address].s = styleDataCell;
+            }
+          }
+          else if (R === range.e.r) { if (C === 9) ws[cell_address].s = styleTotalValor; else ws[cell_address].s = styleTotalCell; }
+        }
+      }
+      if (!ws['!merges']) ws['!merges'] = [];
+      ws['!merges'].push({ s: { r: range.e.r, c: 0 }, e: { r: range.e.r, c: 8 } });
+      ws['!cols'] = [{ wch: 14 },{ wch: 10 },{ wch: 18 },{ wch: 15 },{ wch: 16 },{ wch: 15 },{ wch: 30 },{ wch: 22 },{ wch: 20 },{ wch: 18 },{ wch: 22 },{ wch: 22 },{ wch: 16 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, nomeAba);
+      XLSX.writeFile(wb, nomeArquivo);
+    }
+
+    function enviarParaGoogleScript(dados, dataHora) {
+      if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("SUA_URL")) return;
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agencia: "38326", conta: "993720-X", dataHora: dataHora, registros: dados })
+      }).then(() => {}).catch(err => console.error("Erro ao enviar:", err));
+    }
+  </script>
+</body>
+</html>
